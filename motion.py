@@ -7,6 +7,7 @@ import time
 from motion_logger import log_motion
 import matplotlib.pyplot as plt
 import collections
+import os
 
 class HumanMotionTracker:
     def __init__(self, max_history=30):
@@ -227,30 +228,45 @@ class HumanMotionTracker:
 def main():
     """Main function to run motion tracking with enhanced output"""
     tracker = HumanMotionTracker()
-    cap = cv2.VideoCapture(0)  # Use 0 for webcam, or provide video file path
+    
+    # Use 1.mp4 instead of webcam
+    video_path = '1.mp4'
+    if not os.path.exists(video_path):
+        print(f"Video file not found: {video_path}")
+        print("Please make sure 1.mp4 exists in the current directory")
+        return
+    
+    cap = cv2.VideoCapture(0)  
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     cap.set(cv2.CAP_PROP_FPS, 30)
-    print("Starting motion tracking. Press 'q' to quit, 's' for session summary.")
+    print(f"Starting motion tracking with video: {video_path}")
+    print("Press 'q' to quit, 's' for session summary.")
+    
     motion_history = collections.deque(maxlen=100)
     event_history = collections.deque(maxlen=100)
     fps_history = collections.deque(maxlen=30)
     last_events = collections.deque(maxlen=3)
     prev_time = time.time()
+    
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
+            print("End of video or failed to read frame")
             break
+        
         processed_frame, motion_data = tracker.process_frame(frame)
         now = time.time()
         fps = 1.0 / (now - prev_time) if prev_time else 0
         prev_time = now
         fps_history.append(fps)
+        
         # Update histories
         motion_history.append(motion_data['avg_motion'])
         for event in motion_data['events']:
             event_history.append(event)
             last_events.append(event)
+        
         # Remove live motion graph overlay
         # Only show last 3 hand/head events
         y_offset = 30
@@ -304,13 +320,15 @@ def main():
                 plt.text(0.5, 0.5, 'No events', ha='center', va='center')
             plt.tight_layout()
             plt.show()
+    
     cap.release()
     cv2.destroyAllWindows()
+    
     # Final summary
     final_summary = tracker.get_motion_summary()
     print(f"\nFinal Motion Summary: {final_summary}")
     if isinstance(final_summary, dict):
-        log_motion(final_summary.get('average_motion', ''), final_summary.get('motion_level', ''), '', final_summary.get('frames_analyzed', ''), "Camera 0")
+        log_motion(final_summary.get('average_motion', ''), final_summary.get('motion_level', ''), '', final_summary.get('frames_analyzed', ''), "Video: 1.mp4")
 
 
 if __name__ == "__main__":
