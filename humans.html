@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Human Detection Data{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-users"></i> Human Detection Data</h1>
+    <div>
+        <button class="btn btn-outline-primary" onclick="refreshData()">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+        <button class="btn btn-outline-success" onclick="exportData()">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
+    </div>
+</div>
+
+<!-- Human Detection Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h3 id="currentHumans" class="text-primary">0</h3>
+                <p class="text-muted">Current Humans</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-user-plus fa-2x text-success mb-2"></i>
+                <h3 id="totalDetections" class="text-success">0</h3>
+                <p class="text-muted">Total Detections</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-male fa-2x text-info mb-2"></i>
+                <h3 id="maleCount" class="text-info">0</h3>
+                <p class="text-muted">Male Detections</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-female fa-2x text-warning mb-2"></i>
+                <h3 id="femaleCount" class="text-warning">0</h3>
+                <p class="text-muted">Female Detections</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detection Data Table -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-table"></i> Recent Human Detections</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="detectionsTable">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Person ID</th>
+                        <th>Gender</th>
+                        <th>Age</th>
+                        <th>Confidence</th>
+                        <th>First Detection</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="detectionsTableBody">
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Age Distribution Chart -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Gender Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="genderChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Age Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ageChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    loadHumanData();
+    loadDetectionData();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        loadHumanData();
+        loadDetectionData();
+    }, 30000);
+});
+
+function loadHumanData() {
+    $.get('/api/human_stats', function(data) {
+        if (data.error) {
+            console.error('Error loading human stats:', data.error);
+            return;
+        }
+        
+        $('#currentHumans').text(data.unique_count_in_window || 0);
+        $('#totalDetections').text(data.total_persons_ever_seen || 0);
+        
+        // Calculate gender distribution from active persons
+        let maleCount = 0;
+        let femaleCount = 0;
+        
+        if (data.active_persons) {
+            data.active_persons.forEach(function(person) {
+                // This would need to be enhanced to track gender in the database
+                // For now, we'll use placeholder data
+            });
+        }
+        
+        $('#maleCount').text(maleCount);
+        $('#femaleCount').text(femaleCount);
+        
+        // Update charts
+        updateGenderChart(maleCount, femaleCount);
+        updateAgeChart(data.active_persons || []);
+    }).fail(function() {
+        console.error('Failed to load human stats');
+    });
+}
+
+function loadDetectionData() {
+    $.get('/api/human_detections', function(data) {
+        if (data.error) {
+            showAlert('Failed to load detection data: ' + data.error, 'danger');
+            return;
+        }
+        
+        displayDetectionData(data);
+    }).fail(function() {
+        showAlert('Failed to load detection data', 'danger');
+    });
+}
+
+function displayDetectionData(detections) {
+    const tbody = $('#detectionsTableBody');
+    tbody.empty();
+    
+    if (detections.length === 0) {
+        tbody.append('<tr><td colspan="7" class="text-center text-muted">No detections found</td></tr>');
+    } else {
+        detections.forEach(function(detection) {
+            const row = `
+                <tr>
+                    <td>${formatDateTime(detection.timestamp)}</td>
+                    <td><span class="badge bg-primary">${detection.person_id}</span></td>
+                    <td><span class="badge bg-${detection.gender === 'Male' ? 'info' : 'warning'}">${detection.gender || 'Unknown'}</span></td>
+                    <td>${detection.age || 'Unknown'}</td>
+                    <td><span class="badge bg-${getConfidenceColor(detection.confidence)}">${(detection.confidence * 100).toFixed(1)}%</span></td>
+                    <td><span class="badge bg-${detection.is_first_detection ? 'success' : 'secondary'}">${detection.is_first_detection ? 'Yes' : 'No'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-info" onclick="viewDetails(${detection.person_id})">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+    }
+}
+
+function updateGenderChart(maleCount, femaleCount) {
+    const ctx = document.getElementById('genderChart').getContext('2d');
+    
+    if (window.genderChart) {
+        window.genderChart.destroy();
+    }
+    
+    window.genderChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Male', 'Female'],
+            datasets: [{
+                data: [maleCount, femaleCount],
+                backgroundColor: ['#3498db', '#e74c3c'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function updateAgeChart(activePersons) {
+    const ctx = document.getElementById('ageChart').getContext('2d');
+    
+    if (window.ageChart) {
+        window.ageChart.destroy();
+    }
+    
+    // Create age groups
+    const ageGroups = {
+        '0-18': 0,
+        '19-30': 0,
+        '31-50': 0,
+        '51-70': 0,
+        '70+': 0
+    };
+    
+    activePersons.forEach(function(person) {
+        // This would need to be enhanced to track age in the database
+        // For now, we'll use placeholder data
+    });
+    
+    window.ageChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(ageGroups),
+            datasets: [{
+                label: 'Number of People',
+                data: Object.values(ageGroups),
+                backgroundColor: '#2ecc71',
+                borderColor: '#27ae60',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function getConfidenceColor(confidence) {
+    if (confidence >= 0.8) return 'success';
+    if (confidence >= 0.6) return 'warning';
+    return 'danger';
+}
+
+function formatDateTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+function refreshData() {
+    loadHumanData();
+    loadDetectionData();
+    showAlert('Data refreshed', 'info');
+}
+
+function exportData() {
+    showAlert('CSV export functionality will be implemented in the next version', 'info');
+}
+
+function viewDetails(personId) {
+    showAlert(`View details for person ${personId} - functionality will be implemented in the next version`, 'info');
+}
+
+function showAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('body').prepend(alertHtml);
+    
+    setTimeout(function() {
+        $('.alert').fadeOut();
+    }, 5000);
+}
+</script>
+{% endblock %}
+

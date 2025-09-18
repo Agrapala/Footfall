@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}System Logs{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-list-alt"></i> System Logs</h1>
+    <div>
+        <button class="btn btn-outline-primary" onclick="refreshLogs()">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+        <button class="btn btn-outline-danger" onclick="clearLogs()">
+            <i class="fas fa-trash"></i> Clear Logs
+        </button>
+    </div>
+</div>
+
+<!-- Log Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-filter"></i> Filter Logs</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="severityFilter" class="form-label">Severity</label>
+                <select class="form-select" id="severityFilter">
+                    <option value="">All Severities</option>
+                    <option value="INFO">INFO</option>
+                    <option value="WARNING">WARNING</option>
+                    <option value="ERROR">ERROR</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="eventTypeFilter" class="form-label">Event Type</label>
+                <select class="form-select" id="eventTypeFilter">
+                    <option value="">All Events</option>
+                    <option value="SYSTEM">SYSTEM</option>
+                    <option value="CAMERA">CAMERA</option>
+                    <option value="THIEF_ALERT">THIEF_ALERT</option>
+                    <option value="ERROR">ERROR</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="dateFilter" class="form-label">Date</label>
+                <input type="date" class="form-control" id="dateFilter">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary d-block w-100" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> Apply Filters
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logs Display -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-file-alt"></i> System Logs</h5>
+    </div>
+    <div class="card-body">
+        <div id="logsContainer">
+            <div class="text-center text-muted">
+                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                <p>Loading logs...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadLogs();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(loadLogs, 30000);
+});
+
+function loadLogs() {
+    $.get('/api/logs', function(data) {
+        if (data.error) {
+            showAlert('Failed to load logs: ' + data.error, 'danger');
+            return;
+        }
+        
+        displayLogs(data);
+    }).fail(function() {
+        showAlert('Failed to load logs', 'danger');
+    });
+}
+
+function displayLogs(logs) {
+    const container = $('#logsContainer');
+    container.empty();
+    
+    if (logs.length === 0) {
+        container.html('<div class="text-center text-muted"><i class="fas fa-inbox fa-2x mb-3"></i><p>No logs found</p></div>');
+        return;
+    }
+    
+    logs.forEach(function(log) {
+        const logClass = getLogClass(log.severity);
+        const icon = getLogIcon(log.severity);
+        const logHtml = `
+            <div class="log-entry log-${logClass}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="${icon} me-2"></i>
+                            <strong>${log.event_type}</strong>
+                            <span class="badge bg-${getSeverityColor(log.severity)} ms-2">${log.severity}</span>
+                        </div>
+                        <p class="mb-1">${log.message}</p>
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i> ${formatDateTime(log.timestamp)}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.append(logHtml);
+    });
+}
+
+function getLogClass(severity) {
+    switch(severity) {
+        case 'CRITICAL': return 'critical';
+        case 'ERROR': return 'error';
+        case 'WARNING': return 'warning';
+        case 'INFO': return 'info';
+        default: return 'info';
+    }
+}
+
+function getLogIcon(severity) {
+    switch(severity) {
+        case 'CRITICAL': return 'fas fa-exclamation-circle';
+        case 'ERROR': return 'fas fa-times-circle';
+        case 'WARNING': return 'fas fa-exclamation-triangle';
+        case 'INFO': return 'fas fa-info-circle';
+        default: return 'fas fa-info-circle';
+    }
+}
+
+function getSeverityColor(severity) {
+    switch(severity) {
+        case 'CRITICAL': return 'danger';
+        case 'ERROR': return 'danger';
+        case 'WARNING': return 'warning';
+        case 'INFO': return 'info';
+        default: return 'secondary';
+    }
+}
+
+function formatDateTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+}
+
+function refreshLogs() {
+    loadLogs();
+    showAlert('Logs refreshed', 'info');
+}
+
+function clearLogs() {
+    if (confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {
+        // This would need to be implemented in the backend
+        showAlert('Clear logs functionality will be implemented in the next version', 'info');
+    }
+}
+
+function applyFilters() {
+    // This would need to be implemented in the backend
+    showAlert('Filter functionality will be implemented in the next version', 'info');
+}
+
+function showAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('body').prepend(alertHtml);
+    
+    setTimeout(function() {
+        $('.alert').fadeOut();
+    }, 5000);
+}
+</script>
+
+<style>
+.log-entry {
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.log-critical {
+    background: #fce4ec;
+    border-left-color: #e91e63;
+}
+
+.log-error {
+    background: #ffebee;
+    border-left-color: #e74c3c;
+}
+
+.log-warning {
+    background: #fff3e0;
+    border-left-color: #f39c12;
+}
+
+.log-info {
+    background: #e3f2fd;
+    border-left-color: #3498db;
+}
+</style>
+{% endblock %}

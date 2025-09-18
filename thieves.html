@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Thief Detection Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-user-secret"></i> Thief Detection Management</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addThiefModal">
+        <i class="fas fa-plus"></i> Add Thief
+    </button>
+</div>
+
+<!-- Thief Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-database fa-2x text-primary mb-2"></i>
+                <h3 id="totalThieves" class="text-primary">0</h3>
+                <p class="text-muted">Total Thieves</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card alert-card">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                <h3 id="recentAlerts" class="text-warning">0</h3>
+                <p class="text-muted">Recent Alerts</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                <h3 id="highThreat" class="text-success">0</h3>
+                <p class="text-muted">High Threat</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                <h3 id="lastDetection" class="text-info">Never</h3>
+                <p class="text-muted">Last Detection</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Thieves List -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-list"></i> Known Thieves</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="thievesTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Threat Level</th>
+                        <th>Description</th>
+                        <th>Date Added</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="thievesTableBody">
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Thief Modal -->
+<div class="modal fade" id="addThiefModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus"></i> Add New Thief</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addThiefForm">
+                    <div class="mb-3">
+                        <label for="thiefName" class="form-label">Thief Name *</label>
+                        <input type="text" class="form-control" id="thiefName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="threatLevel" class="form-label">Threat Level</label>
+                        <select class="form-select" id="threatLevel">
+                            <option value="LOW">LOW</option>
+                            <option value="MEDIUM">MEDIUM</option>
+                            <option value="HIGH" selected>HIGH</option>
+                            <option value="CRITICAL">CRITICAL</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="thiefImage" class="form-label">Thief Image *</label>
+                        <input type="file" class="form-control" id="thiefImage" accept="image/*" required>
+                        <div class="form-text">Upload a clear photo of the thief's face</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveThief">
+                    <i class="fas fa-save"></i> Add Thief
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteThiefModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this thief from the database?</p>
+                <p><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">
+                    <i class="fas fa-trash"></i> Delete Thief
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let currentThiefId = null;
+    
+    // Load thieves on page load
+    loadThieves();
+    
+    // Save thief
+    $('#saveThief').click(function() {
+        const name = $('#thiefName').val();
+        const threatLevel = $('#threatLevel').val();
+        const description = $('#description').val();
+        const imageFile = $('#thiefImage')[0].files[0];
+        
+        if (!name || !imageFile) {
+            showAlert('Please fill in all required fields', 'warning');
+            return;
+        }
+        
+        // For now, we'll show a message that image upload is not implemented
+        showAlert('Image upload functionality will be implemented in the next version. Please use the command line interface for now.', 'info');
+        $('#addThiefModal').modal('hide');
+        resetForm();
+    });
+    
+    // Delete thief
+    $('#confirmDelete').click(function() {
+        if (currentThiefId !== null) {
+            $.ajax({
+                url: `/api/thieves/${currentThiefId}`,
+                type: 'DELETE',
+                success: function(data) {
+                    if (data.status === 'success') {
+                        showAlert('Thief deleted successfully', 'success');
+                        loadThieves();
+                    } else {
+                        showAlert('Failed to delete thief', 'danger');
+                    }
+                },
+                error: function() {
+                    showAlert('Failed to delete thief', 'danger');
+                }
+            });
+            $('#deleteThiefModal').modal('hide');
+        }
+    });
+    
+    function loadThieves() {
+        $.get('/api/thieves', function(data) {
+            if (data.error) {
+                showAlert('Failed to load thieves: ' + data.error, 'danger');
+                return;
+            }
+            
+            const tbody = $('#thievesTableBody');
+            tbody.empty();
+            
+            if (data.length === 0) {
+                tbody.append('<tr><td colspan="5" class="text-center text-muted">No thieves in database</td></tr>');
+            } else {
+                data.forEach(function(thief, index) {
+                    const threatClass = getThreatClass(thief.threat_level);
+                    const row = `
+                        <tr>
+                            <td><strong>${thief.name}</strong></td>
+                            <td><span class="threat-${threatClass}">${thief.threat_level}</span></td>
+                            <td>${thief.description || 'No description'}</td>
+                            <td>${formatDate(thief.date_added)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteThief(${thief.id})">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            }
+            
+            // Update statistics
+            updateStatistics(data);
+        }).fail(function() {
+            showAlert('Failed to load thieves', 'danger');
+        });
+    }
+    
+    function updateStatistics(thieves) {
+        $('#totalThieves').text(thieves.length);
+        
+        const threatLevels = {};
+        thieves.forEach(function(thief) {
+            threatLevels[thief.threat_level] = (threatLevels[thief.threat_level] || 0) + 1;
+        });
+        
+        $('#highThreat').text(threatLevels.HIGH || 0);
+        $('#recentAlerts').text('0'); // This would come from the detection system
+        $('#lastDetection').text('Never'); // This would come from the detection system
+    }
+    
+    function getThreatClass(level) {
+        switch(level) {
+            case 'CRITICAL': return 'critical';
+            case 'HIGH': return 'high';
+            case 'MEDIUM': return 'medium';
+            case 'LOW': return 'low';
+            default: return 'unknown';
+        }
+    }
+    
+    function formatDate(dateString) {
+        if (!dateString) return 'Unknown';
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    }
+    
+    function resetForm() {
+        $('#addThiefForm')[0].reset();
+        $('#threatLevel').val('HIGH');
+    }
+    
+    function showAlert(message, type) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        $('body').prepend(alertHtml);
+        
+        setTimeout(function() {
+            $('.alert').fadeOut();
+        }, 5000);
+    }
+    
+    // Global function for delete button
+    window.deleteThief = function(thiefId) {
+        currentThiefId = thiefId;
+        $('#deleteThiefModal').modal('show');
+    };
+});
+</script>
+
+<style>
+.threat-critical { color: #e74c3c; font-weight: bold; }
+.threat-high { color: #e67e22; font-weight: bold; }
+.threat-medium { color: #f39c12; font-weight: bold; }
+.threat-low { color: #27ae60; font-weight: bold; }
+.threat-unknown { color: #95a5a6; font-weight: bold; }
+</style>
+{% endblock %}

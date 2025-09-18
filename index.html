@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Security Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-tachometer-alt"></i> Security Dashboard</h1>
+    <div>
+        <button id="startCamera" class="btn btn-success me-2">
+            <i class="fas fa-play"></i> Start Camera
+        </button>
+        <button id="stopCamera" class="btn btn-danger" disabled>
+            <i class="fas fa-stop"></i> Stop Camera
+        </button>
+    </div>
+</div>
+
+<!-- Status Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h3 id="humanCount" class="text-primary">0</h3>
+                <p class="text-muted">Humans Detected</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-male fa-2x text-info mb-2"></i>
+                <h3 id="maleCount" class="text-info">0</h3>
+                <p class="text-muted">Male Detections</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-female fa-2x text-warning mb-2"></i>
+                <h3 id="femaleCount" class="text-warning">0</h3>
+                <p class="text-muted">Female Detections</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-user-secret fa-2x text-danger mb-2"></i>
+                <h3 id="thievesInDb" class="text-danger">0</h3>
+                <p class="text-muted">Thieves in Database</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card alert-card">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                <h3 id="recentAlerts" class="text-warning">0</h3>
+                <p class="text-muted">Recent Alerts</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-video fa-2x text-success mb-2"></i>
+                <h3 id="cameraStatus" class="text-success">Inactive</h3>
+                <p class="text-muted">Camera Status</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Video Stream -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-video"></i> Live Camera Feed</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="video-container">
+                    <img id="videoStream" src="{{ url_for('video_feed') }}" class="video-stream" alt="Camera Feed">
+                    <div id="statusIndicator" class="status-indicator status-inactive">
+                        <i class="fas fa-circle"></i> Camera Off
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Real-time Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Total Persons Ever Seen:</strong>
+                    <span id="totalPersons" class="float-end">0</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Active Persons:</strong>
+                    <span id="activePersons" class="float-end">0</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Time Window:</strong>
+                    <span id="timeWindow" class="float-end">30 min</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Total Alerts:</strong>
+                    <span id="totalAlerts" class="float-end">0</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Last Update:</strong>
+                    <span id="lastUpdate" class="float-end">Never</span>
+                </div>
+                <hr>
+                <div class="text-center">
+                    <button id="refreshStats" class="btn btn-outline-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh Stats
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> System Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Combined Security System:</strong> <span class="badge bg-success">Active</span></p>
+                <p><strong>Human Detection:</strong> <span class="badge bg-success">Enabled</span></p>
+                <p><strong>Thief Detection:</strong> <span class="badge bg-success">Enabled</span></p>
+                <p><strong>Lighting Enhancement:</strong> <span class="badge bg-success">Enabled</span></p>
+                <p><strong>Outdoor Mode:</strong> <span class="badge bg-success">Enabled</span></p>
+                <p><strong>Total Detections:</strong> <span id="totalDetections" class="badge bg-info">0</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Detections -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-users"></i> Recent Human Detections</h5>
+            </div>
+            <div class="card-body">
+                <div id="recentDetections">
+                    <p class="text-muted text-center">No recent detections</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Gender & Age Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div id="genderAgeStats">
+                    <p class="text-muted text-center">Loading statistics...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let statsInterval;
+    
+    // Start camera
+    $('#startCamera').click(function() {
+        $.post('/start_camera', function(data) {
+            if (data.status === 'success') {
+                $('#startCamera').prop('disabled', true);
+                $('#stopCamera').prop('disabled', false);
+                $('#statusIndicator').removeClass('status-inactive').addClass('status-active')
+                    .html('<i class="fas fa-circle"></i> Camera On');
+                $('#cameraStatus').text('Active').removeClass('text-success').addClass('text-danger');
+                startStatsUpdate();
+                showAlert('Camera started successfully!', 'success');
+            } else {
+                showAlert('Failed to start camera: ' + data.message, 'danger');
+            }
+        }).fail(function() {
+            showAlert('Failed to start camera', 'danger');
+        });
+    });
+    
+    // Stop camera
+    $('#stopCamera').click(function() {
+        $.post('/stop_camera', function(data) {
+            if (data.status === 'success') {
+                $('#startCamera').prop('disabled', false);
+                $('#stopCamera').prop('disabled', true);
+                $('#statusIndicator').removeClass('status-active').addClass('status-inactive')
+                    .html('<i class="fas fa-circle"></i> Camera Off');
+                $('#cameraStatus').text('Inactive').removeClass('text-danger').addClass('text-success');
+                stopStatsUpdate();
+                showAlert('Camera stopped successfully!', 'info');
+            } else {
+                showAlert('Failed to stop camera: ' + data.message, 'danger');
+            }
+        }).fail(function() {
+            showAlert('Failed to stop camera', 'danger');
+        });
+    });
+    
+    // Refresh stats
+    $('#refreshStats').click(function() {
+        updateStats();
+    });
+    
+    function startStatsUpdate() {
+        statsInterval = setInterval(updateStats, 2000); // Update every 2 seconds
+    }
+    
+    function stopStatsUpdate() {
+        if (statsInterval) {
+            clearInterval(statsInterval);
+        }
+    }
+    
+    function updateStats() {
+        $.get('/get_stats', function(data) {
+            if (data.error) {
+                console.error('Error getting stats:', data.error);
+                return;
+            }
+            
+            $('#humanCount').text(data.human_count || 0);
+            $('#thievesInDb').text(data.thieves_in_db || 0);
+            $('#recentAlerts').text(data.recent_alerts || 0);
+            $('#totalPersons').text(data.total_persons || 0);
+            $('#activePersons').text(data.active_persons || 0);
+            $('#timeWindow').text((data.time_window_minutes || 30) + ' min');
+            $('#totalAlerts').text(data.total_alerts || 0);
+            $('#totalDetections').text(data.total_detections || 0);
+            $('#lastUpdate').text(data.timestamp || 'Never');
+            
+            // Update camera status
+            if (data.camera_active) {
+                $('#cameraStatus').text('Active').removeClass('text-success').addClass('text-danger');
+                $('#statusIndicator').removeClass('status-inactive').addClass('status-active')
+                    .html('<i class="fas fa-circle"></i> Camera On');
+            } else {
+                $('#cameraStatus').text('Inactive').removeClass('text-danger').addClass('text-success');
+                $('#statusIndicator').removeClass('status-active').addClass('status-inactive')
+                    .html('<i class="fas fa-circle"></i> Camera Off');
+            }
+        }).fail(function() {
+            console.error('Failed to get stats');
+        });
+        
+        // Load gender and age statistics
+        loadGenderAgeStats();
+        
+        // Load recent detections
+        loadRecentDetections();
+    }
+    
+    function loadGenderAgeStats() {
+        $.get('/api/gender_age_stats', function(data) {
+            if (data.error) {
+                console.error('Error loading gender/age stats:', data.error);
+                return;
+            }
+            
+            // Update gender counts
+            $('#maleCount').text(data.gender_stats.Male || 0);
+            $('#femaleCount').text(data.gender_stats.Female || 0);
+            
+            // Display gender and age distribution
+            let genderHtml = '<h6>Gender Distribution:</h6>';
+            for (const [gender, count] of Object.entries(data.gender_stats)) {
+                const color = gender === 'Male' ? 'info' : 'warning';
+                genderHtml += `<span class="badge bg-${color} me-2">${gender}: ${count}</span>`;
+            }
+            
+            let ageHtml = '<h6>Age Distribution:</h6>';
+            for (const [age, count] of Object.entries(data.age_stats)) {
+                ageHtml += `<span class="badge bg-secondary me-2">${age}: ${count}</span>`;
+            }
+            
+            $('#genderAgeStats').html(genderHtml + '<br><br>' + ageHtml);
+        }).fail(function() {
+            console.error('Failed to load gender/age stats');
+        });
+    }
+    
+    function loadRecentDetections() {
+        $.get('/api/recent_detections', function(data) {
+            if (data.error) {
+                console.error('Error loading recent detections:', data.error);
+                return;
+            }
+            
+            const container = $('#recentDetections');
+            container.empty();
+            
+            if (data.length === 0) {
+                container.html('<p class="text-muted text-center">No recent detections</p>');
+                return;
+            }
+            
+            data.forEach(function(detection) {
+                const genderColor = detection.gender === 'Male' ? 'info' : 'warning';
+                const isNew = detection.is_first_detection ? 'badge bg-success' : 'badge bg-secondary';
+                const time = new Date(detection.timestamp).toLocaleTimeString();
+                
+                const detectionHtml = `
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                        <div>
+                            <strong>Person ${detection.person_id}</strong>
+                            <span class="badge bg-${genderColor} ms-2">${detection.gender}</span>
+                            <span class="badge bg-secondary ms-1">${detection.age}</span>
+                            <span class="${isNew} ms-1">${detection.is_first_detection ? 'New' : 'Returning'}</span>
+                        </div>
+                        <div class="text-muted small">
+                            ${time}
+                        </div>
+                    </div>
+                `;
+                container.append(detectionHtml);
+            });
+        }).fail(function() {
+            console.error('Failed to load recent detections');
+        });
+    }
+    
+    function showAlert(message, type) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        $('body').prepend(alertHtml);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut();
+        }, 5000);
+    }
+    
+    // Initial stats update
+    updateStats();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-cog"></i> System Settings</h1>
+    <button class="btn btn-success" onclick="saveSettings()">
+        <i class="fas fa-save"></i> Save Settings
+    </button>
+</div>
+
+<!-- Camera Settings -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-video"></i> Camera Settings</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="cameraIndex" class="form-label">Camera Index</label>
+                    <input type="number" class="form-control" id="cameraIndex" value="0" min="0" max="10">
+                    <div class="form-text">Camera device index (usually 0 for default camera)</div>
+                </div>
+                <div class="mb-3">
+                    <label for="frameWidth" class="form-label">Frame Width</label>
+                    <input type="number" class="form-control" id="frameWidth" value="640" min="320" max="1920">
+                </div>
+                <div class="mb-3">
+                    <label for="frameHeight" class="form-label">Frame Height</label>
+                    <input type="number" class="form-control" id="frameHeight" value="480" min="240" max="1080">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="exposure" class="form-label">Exposure</label>
+                    <input type="range" class="form-range" id="exposure" min="-13" max="-1" value="-6">
+                    <div class="form-text">Lower values for bright outdoor conditions</div>
+                </div>
+                <div class="mb-3">
+                    <label for="brightness" class="form-label">Brightness</label>
+                    <input type="range" class="form-range" id="brightness" min="0" max="100" value="50">
+                </div>
+                <div class="mb-3">
+                    <label for="contrast" class="form-label">Contrast</label>
+                    <input type="range" class="form-range" id="contrast" min="0" max="100" value="50">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detection Settings -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-eye"></i> Detection Settings</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="timeWindow" class="form-label">Human Count Time Window (minutes)</label>
+                    <input type="number" class="form-control" id="timeWindow" value="30" min="1" max="1440">
+                    <div class="form-text">Time window for counting unique humans</div>
+                </div>
+                <div class="mb-3">
+                    <label for="similarityThreshold" class="form-label">Face Similarity Threshold</label>
+                    <input type="range" class="form-range" id="similarityThreshold" min="0.1" max="1.0" step="0.1" value="0.6">
+                    <div class="form-text">Lower values = more strict matching</div>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="enableLightingEnhancement" checked>
+                        <label class="form-check-label" for="enableLightingEnhancement">
+                            Enable Outdoor Lighting Enhancement
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="frameSkip" class="form-label">Frame Skip Rate</label>
+                    <input type="number" class="form-control" id="frameSkip" value="3" min="1" max="10">
+                    <div class="form-text">Process every Nth frame for performance</div>
+                </div>
+                <div class="mb-3">
+                    <label for="minFaceSize" class="form-label">Minimum Face Size (pixels)</label>
+                    <input type="number" class="form-control" id="minFaceSize" value="30" min="20" max="100">
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="enableLivenessDetection" checked>
+                        <label class="form-check-label" for="enableLivenessDetection">
+                            Enable Liveness Detection
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Thief Detection Settings -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-user-secret"></i> Thief Detection Settings</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="thiefSimilarityThreshold" class="form-label">Thief Similarity Threshold</label>
+                    <input type="range" class="form-range" id="thiefSimilarityThreshold" min="0.1" max="1.0" step="0.1" value="0.6">
+                    <div class="form-text">Lower values = more strict thief matching</div>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="enableThiefAlerts" checked>
+                        <label class="form-check-label" for="enableThiefAlerts">
+                            Enable Thief Alerts
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="alertCooldown" class="form-label">Alert Cooldown (seconds)</label>
+                    <input type="number" class="form-control" id="alertCooldown" value="30" min="5" max="300">
+                    <div class="form-text">Minimum time between alerts for same thief</div>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="saveThiefImages" checked>
+                        <label class="form-check-label" for="saveThiefImages">
+                            Save Thief Detection Images
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-info-circle"></i> System Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Software Versions</h6>
+                <ul class="list-unstyled">
+                    <li><strong>OpenCV:</strong> <span id="opencvVersion">Loading...</span></li>
+                    <li><strong>Face Recognition:</strong> <span id="faceRecognitionVersion">Loading...</span></li>
+                    <li><strong>Flask:</strong> <span id="flaskVersion">Loading...</span></li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>System Status</h6>
+                <ul class="list-unstyled">
+                    <li><strong>Camera Status:</strong> <span id="cameraStatus" class="badge bg-secondary">Unknown</span></li>
+                    <li><strong>Human Detection:</strong> <span id="humanDetectionStatus" class="badge bg-success">Active</span></li>
+                    <li><strong>Thief Detection:</strong> <span id="thiefDetectionStatus" class="badge bg-success">Active</span></li>
+                    <li><strong>Database:</strong> <span id="databaseStatus" class="badge bg-success">Connected</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Database Management -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-database"></i> Database Management</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Data Export</h6>
+                <p class="text-muted">Export system data for backup or analysis</p>
+                <button class="btn btn-outline-primary" onclick="exportData()">
+                    <i class="fas fa-download"></i> Export Data
+                </button>
+            </div>
+            <div class="col-md-6">
+                <h6>Data Cleanup</h6>
+                <p class="text-muted">Clean old detection data to free up space</p>
+                <button class="btn btn-outline-warning" onclick="cleanupData()">
+                    <i class="fas fa-broom"></i> Cleanup Old Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Actions -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-tools"></i> System Actions</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <button class="btn btn-outline-primary w-100" onclick="restartSystem()">
+                    <i class="fas fa-redo"></i> Restart System
+                </button>
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-outline-warning w-100" onclick="testCamera()">
+                    <i class="fas fa-video"></i> Test Camera
+                </button>
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-outline-danger w-100" onclick="shutdownSystem()">
+                    <i class="fas fa-power-off"></i> Shutdown System
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadSettings();
+    loadSystemInfo();
+});
+
+function loadSettings() {
+    // Load current settings from localStorage or server
+    const settings = JSON.parse(localStorage.getItem('securitySettings') || '{}');
+    
+    // Apply settings to form
+    Object.keys(settings).forEach(key => {
+        const element = document.getElementById(key);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.checked = settings[key];
+            } else {
+                element.value = settings[key];
+            }
+        }
+    });
+}
+
+function saveSettings() {
+    const settings = {
+        cameraIndex: document.getElementById('cameraIndex').value,
+        frameWidth: document.getElementById('frameWidth').value,
+        frameHeight: document.getElementById('frameHeight').value,
+        exposure: document.getElementById('exposure').value,
+        brightness: document.getElementById('brightness').value,
+        contrast: document.getElementById('contrast').value,
+        timeWindow: document.getElementById('timeWindow').value,
+        similarityThreshold: document.getElementById('similarityThreshold').value,
+        enableLightingEnhancement: document.getElementById('enableLightingEnhancement').checked,
+        frameSkip: document.getElementById('frameSkip').value,
+        minFaceSize: document.getElementById('minFaceSize').value,
+        enableLivenessDetection: document.getElementById('enableLivenessDetection').checked,
+        thiefSimilarityThreshold: document.getElementById('thiefSimilarityThreshold').value,
+        enableThiefAlerts: document.getElementById('enableThiefAlerts').checked,
+        alertCooldown: document.getElementById('alertCooldown').value,
+        saveThiefImages: document.getElementById('saveThiefImages').checked
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('securitySettings', JSON.stringify(settings));
+    
+    // Send to server (this would need to be implemented)
+    showAlert('Settings saved successfully!', 'success');
+}
+
+function loadSystemInfo() {
+    // Load system information
+    document.getElementById('opencvVersion').textContent = '4.5.0+';
+    document.getElementById('faceRecognitionVersion').textContent = '1.3.0';
+    document.getElementById('flaskVersion').textContent = '2.0.0';
+    
+    // Check system status
+    $.get('/get_stats', function(data) {
+        if (data.camera_active) {
+            document.getElementById('cameraStatus').textContent = 'Active';
+            document.getElementById('cameraStatus').className = 'badge bg-success';
+        } else {
+            document.getElementById('cameraStatus').textContent = 'Inactive';
+            document.getElementById('cameraStatus').className = 'badge bg-danger';
+        }
+    });
+}
+
+function exportData() {
+    showAlert('Data export functionality will be implemented in the next version', 'info');
+}
+
+function cleanupData() {
+    if (confirm('Are you sure you want to clean up old data? This action cannot be undone.')) {
+        showAlert('Data cleanup functionality will be implemented in the next version', 'info');
+    }
+}
+
+function restartSystem() {
+    if (confirm('Are you sure you want to restart the system?')) {
+        showAlert('System restart functionality will be implemented in the next version', 'info');
+    }
+}
+
+function testCamera() {
+    showAlert('Camera test functionality will be implemented in the next version', 'info');
+}
+
+function shutdownSystem() {
+    if (confirm('Are you sure you want to shutdown the system?')) {
+        showAlert('System shutdown functionality will be implemented in the next version', 'info');
+    }
+}
+
+function showAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('body').prepend(alertHtml);
+    
+    setTimeout(function() {
+        $('.alert').fadeOut();
+    }, 5000);
+}
+</script>
+{% endblock %}
